@@ -6,9 +6,9 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Injecta.UnityEditor
+namespace Injecta
 {
-    public class CreationMenuEditor
+    internal static class CreationMenuEditor
     {
         private const int MENU_PRIORITY = 1;
 

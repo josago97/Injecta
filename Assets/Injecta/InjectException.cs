@@ -4,6 +4,6 @@ namespace Injecta
 {
     public class InjectException : Exception
     {
-        public InjectException(string message) : base(message) { }
+        internal InjectException(string message) : base(message) { }
     }
 }

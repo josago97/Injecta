@@ -18,13 +18,6 @@ namespace Injecta
             }
         }
 
-        public static ProjectContext EnsureInstance()
-        {
-            if (_instance == null) _instance = CreateInstance();
-
-            return _instance;
-        }
-
         private static ProjectContext CreateInstance()
         {
             ProjectContext projectContext;
