@@ -6,9 +6,9 @@ namespace Injecta
 {
     public abstract class Context : ContextBase
     {
-        [SerializeField] protected ScriptableObjectInstaller[] scriptableObjectInstallers;
         [SerializeField] protected MonoInstaller[] monoInstallers;
         [SerializeField] protected MonoInstaller[] prefabInstallers;
+        [SerializeField] protected ScriptableObjectInstaller[] scriptableObjectInstallers;
 
         private Transform _prefabResolverContainer;
 
@@ -16,6 +16,8 @@ namespace Injecta
 
         protected void Awake()
         {
+            Debug.Log(gameObject.name);
+
             Initialize();
             Container = GetContainer();
             InstallBindings();
@@ -28,6 +30,10 @@ namespace Injecta
 
         protected void InstallBindings()
         {
+            Debug.Log(gameObject.name + scriptableObjectInstallers);
+            Debug.Log(gameObject.name + monoInstallers);
+            Debug.Log(gameObject.name + prefabInstallers);
+
             InstallScriptableObjects();
             InstallBindings(monoInstallers);
             InstallPrefabs();
@@ -35,26 +41,35 @@ namespace Injecta
 
         private void InstallScriptableObjects()
         {
-            Array.ForEach(scriptableObjectInstallers, InstallBindings);
+            if (scriptableObjectInstallers != null)
+            {
+                Array.ForEach(scriptableObjectInstallers, InstallBindings);
+            }
         }
 
         private void InstallPrefabs()
         {
-            _prefabResolverContainer = new GameObject().transform;
-            _prefabResolverContainer.SetParent(transform);
-            _prefabResolverContainer.gameObject.SetActive(false);
-
-            for (int i = 0; i < prefabInstallers.Length; i++)
+            if (prefabInstallers != null && prefabInstallers.Length > 0)
             {
-                GameObject prefab = prefabInstallers[i].gameObject;
-                MonoInstaller installer = Instantiate(prefab, _prefabResolverContainer).GetComponent<MonoInstaller>();
-                InstallBindings(installer);
+                _prefabResolverContainer = new GameObject().transform;
+                _prefabResolverContainer.SetParent(transform);
+                _prefabResolverContainer.gameObject.SetActive(false);
+
+                for (int i = 0; i < prefabInstallers.Length; i++)
+                {
+                    GameObject prefab = prefabInstallers[i].gameObject;
+                    MonoInstaller installer = Instantiate(prefab, _prefabResolverContainer).GetComponent<MonoInstaller>();
+                    InstallBindings(installer);
+                }
             }
         }
 
         protected void InstallBindings(IInstaller[] installers)
         {
-            Array.ForEach(installers, InstallBindings);
+            if (installers != null)
+            {
+                Array.ForEach(installers, InstallBindings);
+            }
         }
 
         protected void InstallBindings(IInstaller installer)
@@ -69,7 +84,8 @@ namespace Injecta
             MonoBehaviour[] allMonos = roots.SelectMany(r => r.GetComponentsInChildren<MonoBehaviour>(true)).ToArray();
             ResolveBindings(Container, allMonos);
 
-            FreePrefabsInstantiated();
+            // TODO: ver para que era esto
+            //FreePrefabsInstantiated();
         }
 
         private void FreePrefabsInstantiated()

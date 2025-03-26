@@ -15,24 +15,30 @@ namespace Injecta
         [MenuItem("Assets/Create/Injecta/Project Context", false, MENU_PRIORITY)]
         public static void CreateProjectContext()
         {
-            GameObject[] projectContexts = FindPrefabsWithComponent<ProjectContext>();
+            ProjectContext[] projectContexts = Resources.FindObjectsOfTypeAll<ProjectContext>();
 
             if (projectContexts.Length > 0)
             {
                 EditorGUIUtility.PingObject(projectContexts[0]);
                 ShowError("A prefab with a ProjectContext component already exists.");
-
-                string a = "'ProjectContext.prefab' must be placed inside a directory named 'Resources'. Please try again by right clicking whithin the Project pane in a valid Resources folder. ";
+                return;
             }
-            else
+
+            string folderPath = GetCurrentAssetFolderPath();
+            string directoryName = Path.GetFileName(folderPath);
+
+            if (directoryName != Constants.RESOURCES_FOLDER)
             {
-                GameObject prefab = new GameObject();
-                prefab.AddComponent<ProjectContext>();
-
-                string path = $"{GetCurrentAssetFolderPath()}/ProjectContext.prefab";
-                PrefabUtility.SaveAsPrefabAsset(prefab, path);
-                Object.DestroyImmediate(prefab);
+                ShowError("The ProjectContext prefab must be placed inside a directory named 'Resources'. Please try again by right clicking whithin the Project pane in a valid Resources folder.");
+                return;
             }
+
+            GameObject gameObject = new GameObject();
+            gameObject.AddComponent<ProjectContext>();
+
+            string path = $"{folderPath}/ProjectContext.prefab";
+            PrefabUtility.SaveAsPrefabAsset(gameObject, path);
+            Object.DestroyImmediate(gameObject);
         }
 
         [MenuItem("Assets/Create/Injecta/Mono Installer", false, MENU_PRIORITY + 1)]
@@ -76,6 +82,8 @@ namespace Injecta
 
             return path;
         }
+
+
 
         private static GameObject[] FindPrefabsWithComponent<T>() where T : Component
         {
