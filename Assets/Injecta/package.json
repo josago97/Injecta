@@ -1,6 +1,6 @@
 {
   "name": "com.josago97.injecta",
-  "displayName": Injecta
+  "displayName": "Injecta",
   "version": "0.1.0",
   "unity": "6000.0",
   "description": "Minimal dependency injection framework for Unity",
