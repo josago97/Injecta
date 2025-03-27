@@ -5,7 +5,7 @@ You can install Injecta using any of the following methods:
 
 ### Unity Package Manager
 ```
-https://github.com/josago97/Injecta.git?path=/Assets/Plugins/Injecta
+https://github.com/josago97/Injecta.git?path=/Assets/Injecta
 ```
 
 1. In Unity, open **Window** → **Package Manager**.
