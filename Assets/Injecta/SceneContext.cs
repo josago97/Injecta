@@ -1,6 +1,4 @@
-using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Injecta
 {
@@ -9,10 +7,6 @@ namespace Injecta
         protected override void Initialize()
         {
             DI.SceneContextRegistry.Add(this);
-
-            // Revisar esto ya que luego la clase padre lo sobreescribe
-            Container = GetContainer();
-            Container.BindInstance(Container);
         }
 
         protected override Container GetContainer()
