@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 
 namespace Injecta
@@ -69,9 +68,7 @@ namespace Injecta
 
         protected void InstallBindings(IInstaller installer)
         {
-            // TODO: Hacer esto utilizando el propio sistema de inyección
-            //installer.GetType().GetProperty(nameof(Container), BindingFlags.NonPublic | BindingFlags.Instance).SetValue(installer, Container);
-            installer.Init(Container);
+            Container.Resolve(installer);
             installer.InstallBindings();
         }
 

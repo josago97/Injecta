@@ -1,7 +1,7 @@
 {
   "name": "com.josago97.injecta",
   "displayName": "Injecta",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "unity": "6000.0",
   "description": "Minimal dependency injection framework for Unity",
   "keywords": ["Dependency Injection", "IoC", "DI", "DI Container"],

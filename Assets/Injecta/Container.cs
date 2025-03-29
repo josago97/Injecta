@@ -1,123 +1,130 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace Injecta
 {
     public class Container
     {
+        private static readonly Type OBJECT_TYPE = typeof(object);
+
         private Dictionary<Type, object> _bindings;
         private Container _parent;
 
-        public Container() : this(null)
-        {
-        }
+        public Container() : this(null) { }
 
         public Container(Container parent)
         {
             _parent = parent;
             _bindings = new Dictionary<Type, object>();
+
+            BindInstance(this);
         }
 
         public void BindInstances(params object[] instances)
         {
-            Array.ForEach(instances, o => _bindings[o.GetType()] = o);
+            Array.ForEach(instances, BindInstance);
         }
 
         public void BindInstance<T>(T instance)
         {
             _bindings[typeof(T)] = instance;
-        }      
+        }
 
         public bool TryGetBinding(Type type, out object value)
         {
-            return _bindings.TryGetValue(type, out value);
+            value = null;
+            bool hasBinding = false;
+            Container container = this;
+
+            do
+            {
+                hasBinding = container._bindings.TryGetValue(type, out value);
+                container = container._parent;
+            }
+            while (!hasBinding && container != null);
+
+            return hasBinding;
         }
 
         public void Resolve(object instance)
         {
-            Container[] allContainers = GetAllContainers();
-            ResolveFields(instance, allContainers);
-            ResolveProperties(instance, allContainers);
-            ResolveMethods(instance, allContainers);
+            ResolveFields(instance);
+            ResolveProperties(instance);
+            ResolveMethods(instance);
         }
-
-        private Container[] GetAllContainers()
+        private void ResolveFields(object instance)
         {
-            List<Container> allContainers = new List<Container>() { this };
-            Container current = this;
-
-            while (current._parent != null)
-            {
-                allContainers.Add(current._parent);
-                current = current._parent;
-            }
-
-            allContainers.Reverse();
-
-            return allContainers.ToArray();
-        }
-
-        private void ResolveFields(object instance, Container[] containers)
-        {
-            Type type = instance.GetType();
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            FieldInfo[] fields = Array.FindAll(type.GetFields(flags), f => f.IsDefined(typeof(InjectAttribute)));
+            FieldInfo[] fields = GetInjectMembers<FieldInfo>(instance, type => type.GetFields);
 
             foreach (FieldInfo field in fields)
             {
-                if (TryGetBinding(containers, field.FieldType, out object value))
+                if (TryGetBinding(field.FieldType, out object value))
                     field.SetValue(instance, value);
             }
         }
 
-        private void ResolveProperties(object instance, Container[] containers)
+        private void ResolveProperties(object instance)
         {
-            Type type = instance.GetType();
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            PropertyInfo[] properties = Array.FindAll(type.GetProperties(flags), f => f.IsDefined(typeof(InjectAttribute)));
+            PropertyInfo[] properties = GetInjectMembers<PropertyInfo>(instance, type => type.GetProperties);
 
             foreach (PropertyInfo property in properties)
             {
-                if (TryGetBinding(containers, property.PropertyType, out object value))
+                if (property.CanWrite && TryGetBinding(property.PropertyType, out object value))
                     property.SetValue(instance, value);
             }
         }
 
-        private void ResolveMethods(object instance, Container[] containers)
+        private void ResolveMethods(object instance)
         {
-            Type type = instance.GetType();
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            MethodInfo[] methods = Array.FindAll(type.GetMethods(flags), f => f.IsDefined(typeof(InjectAttribute)));
+            MethodInfo[] methods = GetInjectMembers<MethodInfo>(instance, type => type.GetMethods);
 
-            Array.ForEach(methods, m =>
+            foreach (MethodInfo method in methods)
             {
-                List<object> args = new List<object>();
+                ParameterInfo[] parameters = method.GetParameters();
+                object[] args = new object[parameters.Length];
 
-                Array.ForEach(m.GetParameters(), p =>
+                for (int i = 0; i < parameters.Length; i++)
                 {
-                    if (TryGetBinding(containers, p.ParameterType, out object value))
-                        args.Add(value);
-                    else
-                        args.Add(null);
-                });
+                    ParameterInfo param = parameters[i];
+                    TryGetBinding(param.ParameterType, out object value);
+                    args[i] = value;
+                }
 
-                m.Invoke(instance, args.ToArray());
-            });
+                method.Invoke(instance, args);
+            }
         }
 
-        private bool TryGetBinding(Container[] containers, Type propertyType, out object value)
+        private T[] GetInjectMembers<T>(object instance, Func<Type, Func<BindingFlags, T[]>> func) where T : MemberInfo
         {
-            value = null;
-            bool hasBinding = false;
+            const BindingFlags baseBindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+            const BindingFlags bindingFlags = BindingFlags.Public | baseBindingFlags;
 
-            for (int i = 0; i < containers.Length && !hasBinding; i++)
+            Type type = instance.GetType();
+            List<T> members = func(type)(bindingFlags).Where(HasInjectAttribute).ToList();
+
+            while ((type = type.BaseType) != null && type != OBJECT_TYPE)
             {
-                Container container = containers[i];
-                hasBinding = container.TryGetBinding(propertyType, out value);
+                IEnumerable<T> privateMembers = func(type)(bindingFlags)
+                    .Where(member => IsPrivateMember(member) && HasInjectAttribute(member));
+
+                members.AddRange(privateMembers);
             }
 
-            return hasBinding;
+            return members.ToArray();
+        }
+
+        private bool HasInjectAttribute(MemberInfo memberInfo)
+        {
+            return memberInfo.IsDefined(typeof(InjectAttribute));
+        }
+
+        private bool IsPrivateMember(MemberInfo member)
+        {
+            return member is FieldInfo field && field.IsPrivate ||
+                   member is MethodBase method && method.IsPrivate ||
+                   member is PropertyInfo property && property.CanWrite && property.SetMethod.IsPrivate;
         }
     }
 }
