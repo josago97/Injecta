@@ -112,10 +112,10 @@ namespace Injecta
             stringBuilder.AppendLine();
             stringBuilder.AppendLine($"public class CLASS_NAME : {parentClass}");
             stringBuilder.AppendLine("{");
-            stringBuilder.AppendLine("  public override void InstallBindings()");
-            stringBuilder.AppendLine("  {");
-            stringBuilder.AppendLine("      ");
-            stringBuilder.AppendLine("  }");
+            stringBuilder.AppendLine("    public override void InstallBindings()");
+            stringBuilder.AppendLine("    {");
+            stringBuilder.AppendLine("        ");
+            stringBuilder.AppendLine("    }");
             stringBuilder.AppendLine("}");
 
             string template = stringBuilder.ToString();
